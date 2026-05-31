@@ -14,6 +14,9 @@ Data Dive combine plusieurs technologies pour offrir une expérience d'analyse p
 - **Visualisation VR** avec Unity et Meta Quest
 - **Dashboard Desktop** pour l'analyse en temps réel
 
+### Démonstration Vidéo
+[ https://drive.google.com/drive/folders/1xMk1WZep_7o-21d74oNec-ukBYJafCWF?usp=drive_link ]
+
 ---
 
 ## Technologies Utilisées
@@ -42,7 +45,7 @@ graph TD
 ## Structure du Dépôt
 
 ```bash
-data_dive_project/
+Projet_VR/
 ├── phase1_data_engineering/
 ├── phase2_ai_analytics/
 ├── phase3_backend_api/
@@ -131,13 +134,9 @@ python -m streamlit run app/dashboard.py
 - **Phase 5** : Dashboard analytique interactif avec Streamlit
 
 ---
-## Démonstration
-### Vidéo
-[ https://drive.google.com/drive/folders/1xMk1WZep_7o-21d74oNec-ukBYJafCWF?usp=drive_link ]
 ## Équipe
 - Amar Chaimaa 
-- Assmaa Azaroual 
+- Azaroual Assmaa
 - Bensaid Malak
-- Basma El mghari
-- Mohamed Smaoui
-  
+- El mghari Basma
+- Smaoui Mohamed  
