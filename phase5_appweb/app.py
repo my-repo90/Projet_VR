@@ -53,13 +53,13 @@ log = logging.getLogger("datadive.bridge")
 #  BRIDGE CONFIGURATION  ← edit these for your deployment
 # ═════════════════════════════════════════════════════════════
 BRIDGE_CONFIG = {
-    # URL of the external REST API that Unity actions are forwarded to
-    "api_base_url":    "https://api.example.com",        # ← your API base URL
-    "api_endpoint":    "/v1/process",                    # ← your API endpoint
-    "api_key":         "YOUR_API_KEY_HERE",              # ← your API key
-    "api_timeout_s":   15,                               # seconds before timeout
-    "bridge_port":     8502,                             # FastAPI bridge port
-    "max_retries":     2,                                # retry count on failure
+    # Redirection directe vers ton API locale contenant les nœuds et les liens
+    "api_base_url":    "http://127.0.0.1:8010",           
+    "api_endpoint":    "/api/nodes",                     # Route principale pour influencer les nœuds
+    "api_key":         "NONE",                           
+    "api_timeout_s":   5,                                
+    "api_bridge_port": 8502,                             
+    "max_retries":     1,                                
 }
 
 # ═════════════════════════════════════════════════════════════
@@ -674,6 +674,37 @@ def anomaly_dist_fig():
         yaxis=dict(showgrid=True,gridcolor='rgba(0,229,255,.05)',color='#2a4a5a',tickfont=dict(family='Share Tech Mono',size=8)))
     return fig
 
+# ═════════════════════════════════════════════════════════════
+#  PANNEL DE CONTROLE ET SYNCHRONISATION UNITY 3D
+# ═════════════════════════════════════════════════════════════
+st.markdown("---")
+st.header("🎮 Centralisation & Synchronisation Unity 3D")
+
+col_input1, col_input2, col_btn = st.columns([2, 2, 2])
+
+with col_input1:
+    target_cluster = st.number_input("Sélectionner le Cluster ID à cibler", min_value=0, max_value=10, value=1)
+
+with col_input2:
+    mark_as_fraud = st.checkbox("Mettre en évidence (Risque Critique / Rouge)")
+
+with col_btn:
+    st.write("") # Espacement alignement
+    if st.button("🚀 Envoyer l'état à Unity", type="primary"):
+        sync_payload = {
+            "cluster_id": target_cluster,
+            "is_fraud": 1 if mark_as_fraud else 0
+        }
+        try:
+            # Envoi direct à ton API locale pour que Unity intercepte la modification
+            response = requests.post("http://127.0.0.1:8010/api/sync/nodes/update", json=sync_payload, timeout=2)
+            if response.status_code == 200:
+                st.success(f"Dossier synchronisé ! Cluster {target_cluster} mis à jour.")
+            else:
+                st.error("API en ligne mais refus de mise à jour.")
+        except Exception as e:
+            st.error(f"Erreur de liaison API : {e}")
+
 def tsne_scatter_fig():
     rng=np.random.default_rng(99)
     gdata=[(rng.normal(-0.5,.15,80),rng.normal(-0.4,.15,80),'rgba(0,229,255,.75)'),
@@ -997,4 +1028,4 @@ elif active == "unity":
             <span class="{'ok' if FASTAPI_AVAILABLE else 'vc'}">{'BRIDGED' if FASTAPI_AVAILABLE else 'MOCK'}</span></div>
           <div class="isrow"><span class="k">OpenXR Runtime</span><span class="vc">v1.0.28</span></div>
         </div>""", unsafe_allow_html=True)
-
+        
