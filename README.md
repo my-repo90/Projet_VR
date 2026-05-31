@@ -49,8 +49,8 @@ Projet_VR/
 ├── phase1_data_engineering/
 ├── phase2_ai_analytics/
 ├── phase3_backend_api/
-├── phase4_unity_vr/
-├── phase5_desktop_client/
+├── phase4_unity/
+├── phase5_appweb/
 └── README.md
 ```
 ---
