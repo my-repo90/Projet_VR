@@ -1,0 +1,11 @@
+[
+  {
+    "node_id": "C1",
+    "x": 1.0,
+    "y": 2.0,
+    "z": 3.0,
+    "cluster_label": 1,
+    "anomaly_score": 0.91,
+    "risk_level": "critique"
+  }
+]
