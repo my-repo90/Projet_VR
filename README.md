@@ -101,7 +101,7 @@ Accès :
 ### 5. Lancer le Dashboard
 ```bash
 cd phase5_desktop_client
-streamlit run app/dashboard.py
+python -m streamlit run app/dashboard.py
 ```
 ## Jeu de Données
 
