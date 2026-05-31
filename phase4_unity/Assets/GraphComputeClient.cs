@@ -21,8 +21,13 @@ public class GraphComputeClient : MonoBehaviour
     [System.Serializable]
     private class LocalNodeContainer { public List<LocalNode> items; }
 
+    // Structure reçue depuis la synchronisation Streamlit
+    [System.Serializable]
+    public class SyncState { public int cluster_id; public int is_fraud; }
+
     private string edgesUrl = "http://127.0.0.1:8010/api/edges?limit=2000";
     private string nodesUrl = "http://127.0.0.1:8010/api/nodes";
+    private string syncUrl = "http://127.0.0.1:8010/api/sync/nodes/state";
 
     public float graphScale = 2700f;
     public float spreadAmount = 1500f;
@@ -39,9 +44,10 @@ public class GraphComputeClient : MonoBehaviour
     [SerializeField] private Material dotsMaterial;
 
     [Header("Rendu Liens (Méthode Classique)")]
-    [SerializeField] private GameObject linePrefab; // Ton prefab avec le LineRenderer
+    [SerializeField] private GameObject linePrefab;
 
     private List<GPUComputeNode> nodesToRender = new List<GPUComputeNode>();
+    private List<LocalNode> originalNodesData = new List<LocalNode>(); // Sauvegarde des types d'API
     private GraphicsBuffer meshPropertiesBuffer;
     private GraphicsBuffer commandBuffer;
     private Bounds renderBounds;
@@ -96,13 +102,14 @@ public class GraphComputeClient : MonoBehaviour
                         string idTrim = node.node_id.Trim();
                         if (requiredNodeIDs.Count == 0 || requiredNodeIDs.Contains(idTrim))
                         {
+                            originalNodesData.Add(node); // Sauvegarde pour les filtres dynamiques
+
                             GPUComputeNode gpuNode = new GPUComputeNode();
                             float posX = node.x * graphScale + Random.Range(-spreadAmount, spreadAmount);
                             float posY = node.y * graphScale + Random.Range(-spreadAmount, spreadAmount);
                             float posZ = node.z * graphScale + Random.Range(-spreadAmount, spreadAmount);
                             Vector3 position = new Vector3(posX, posY, posZ);
 
-                            // On stocke la position pour les lignes
                             nodePositions[idTrim] = position;
 
                             float size = 30f;
@@ -132,12 +139,12 @@ public class GraphComputeClient : MonoBehaviour
             yield return null;
         }
 
-        // Mode Secours automatique (Simulation) si l'API ne répond pas
+        // Mode Secours automatique
         if (nodesToRender.Count == 0)
         {
             Debug.LogWarning("⚠️ Serveur API déconnecté. Génération de la simulation.");
             List<Vector3> mockPositions = new List<Vector3>();
-            for (int i = 0; i < 60; i++) // Restreint pour la simulation classique
+            for (int i = 0; i < 60; i++)
             {
                 GPUComputeNode mockNode = new GPUComputeNode();
                 Vector3 pos = new Vector3(Random.Range(-600f, 600f), Random.Range(-600f, 600f), Random.Range(-600f, 600f));
@@ -147,7 +154,6 @@ public class GraphComputeClient : MonoBehaviour
                 nodesToRender.Add(mockNode);
             }
 
-            // Génération des lignes classiques de secours
             for (int i = 0; i < mockPositions.Count - 1; i++)
             {
                 SpawnLine(mockPositions[i], mockPositions[i + 1]);
@@ -155,7 +161,6 @@ public class GraphComputeClient : MonoBehaviour
         }
         else
         {
-            // Tracé des vraies lignes de ton API
             foreach (LocalEdge edge in validEdges)
             {
                 string src = edge.source.Trim();
@@ -168,9 +173,81 @@ public class GraphComputeClient : MonoBehaviour
         }
 
         InitializeGPUBuffers();
+
+        // 🔗 Lancement de la synchronisation avec Streamlit en tâche de fond
+        if (originalNodesData.Count > 0)
+        {
+            StartCoroutine(CheckStreamlitSync());
+        }
     }
 
-    // Méthode classique pour instancier un composant de ligne physique
+    // Polling asynchrone toutes les secondes vers ton API
+    IEnumerator CheckStreamlitSync()
+    {
+        while (true)
+        {
+            using (UnityWebRequest request = UnityWebRequest.Get(syncUrl))
+            {
+                request.timeout = 1;
+                yield return request.SendWebRequest();
+                if (request.result == UnityWebRequest.Result.Success)
+                {
+                    SyncState state = JsonUtility.FromJson<SyncState>(request.downloadHandler.text);
+                    if (state != null)
+                    {
+                        UpdateGraphVisuals(state.cluster_id, state.is_fraud);
+                    }
+                }
+            }
+            yield return new WaitForSeconds(1.0f);
+        }
+    }
+
+    // Modification dynamique des structures de données et mise à jour du GPU Buffer
+    void UpdateGraphVisuals(int targetCluster, int isFraudAction)
+    {
+        if (nodesToRender.Count != originalNodesData.Count) return;
+
+        for (int i = 0; i < originalNodesData.Count; i++)
+        {
+            LocalNode meta = originalNodesData[i];
+            GPUComputeNode gpuNode = nodesToRender[i];
+
+            // Si Streamlit demande d'isoler/marquer un cluster spécifique
+            if (targetCluster != -1 && meta.cluster_label == targetCluster)
+            {
+                if (isFraudAction == 1)
+                {
+                    gpuNode.color = new Vector4(1f, 0f, 0f, 1f); // Forçage Rouge Critique
+                }
+                else
+                {
+                    gpuNode.color = new Vector4(1f, 0.7f, 0f, 1f); // Orange d'alerte standard
+                }
+            }
+            else // Réinitialisation automatique aux couleurs par défaut d'origine
+            {
+                if (meta.is_fraud_node == 1 || meta.risk_level == "critique")
+                {
+                    gpuNode.color = new Vector4(1f, 0f, 0f, 1f);
+                }
+                else
+                {
+                    switch (meta.cluster_label)
+                    {
+                        case 1: gpuNode.color = new Vector4(0f, 0.5f, 1f, 1f); break;
+                        case 2: gpuNode.color = new Vector4(0.1f, 1f, 0.2f, 1f); break;
+                        default: gpuNode.color = new Vector4(0.8f, 0.8f, 0.8f, 1f); break;
+                    }
+                }
+            }
+            nodesToRender[i] = gpuNode;
+        }
+
+        // Envoi direct et immédiat du nouveau tableau de données mis à jour à la carte graphique
+        meshPropertiesBuffer.SetData(nodesToRender.ToArray());
+    }
+
     void SpawnLine(Vector3 start, Vector3 end)
     {
         if (linePrefab == null) return;
