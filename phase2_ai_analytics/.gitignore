@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environments
+venv/
+.env/
+
+
+
+# Temporary files
+temp/
+tmp/
+*.log
+
+# Jupyter cache
+.ipynb_checkpoints/
+
+
+# Keep processed features if team needs them
+# data/processed/   <- remove # ONLY if teammates need these files

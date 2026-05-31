@@ -1,0 +1,73 @@
+```gitignore
+# ==========================
+# Virtual Environment
+# ==========================
+venv/
+VEV/
+env/
+.venv/
+
+# ==========================
+# Ignore data folders
+# ==========================
+phase1_data_engineering/data/
+phase2_ai_analytics/data/
+
+# Ignore everything inside data folders
+phase1_data_engineering/data/**
+phase2_ai_analytics/data/**
+
+# ==========================
+# Python cache files
+# ==========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ==========================
+# Jupyter Notebook
+# ==========================
+.ipynb_checkpoints/
+
+# ==========================
+# Environment variables
+# ==========================
+.env
+
+# ==========================
+# IDE / Editor
+# ==========================
+.vscode/
+.idea/
+
+# ==========================
+# Logs
+# ==========================
+*.log
+
+# ==========================
+# OS files
+# ==========================
+.DS_Store
+Thumbs.db
+
+# ==========================
+# Build files
+# ==========================
+build/
+dist/
+*.egg-info/
+
+# ==========================
+# Python compiled files
+# ==========================
+*.pyc
+*.pyo
+*.pyd
+
+# ==========================
+# Temporary files
+# ==========================
+*.tmp
+*.temp
+```
